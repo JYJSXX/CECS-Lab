@@ -38,7 +38,9 @@ COLOR_NONE  		= \033[0m
 
 # Compile C to object file
 ## Lab1 TODO: add C compile rule
-
+$(basename %.c): %.c
+#$(addsuffix $(AS), $(CROSS_COMPILE)) $(COMMON_FLAGS) $(realpath $<) -o $(realpath $@)
+	riscv64-unknown-linux-gnu-gcc -o $(addsuffix .o, $(basename $(realpath $<))) $(realpath $<)
 # Compile assembly to object file
 $(TAR_DIR)/%.o: %.S
 	@mkdir -p $(dir $@) && echo "$(COLOR_YELLOW)[AS]$(COLOR_NONE) $<"
