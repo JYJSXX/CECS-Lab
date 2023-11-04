@@ -19,10 +19,20 @@ void print_itrace();
 void difftest_step();
 
 // Lab2 HINT: instruction log struct for instruction trace
+char buf[1000] = "";
+int buf_head = 0;
 struct inst_log{
-  word_t pc;
-  word_t inst;
-};
+  word_t pc = 0;
+  union{
+    word_t inst;
+    uint8_t inst_buf[4];
+  }ins;
+  void print(){
+    if(pc == 0) return;
+    disassemble(buf, 1000, pc, ins.inst_buf, 4);
+    std::cout << buf << std::endl;
+  }
+}record[16];
 
 
 uint32_t *cpu_mstatus = NULL, *cpu_mtvec = NULL, *cpu_mepc = NULL, *cpu_mcause = NULL;
@@ -82,6 +92,8 @@ void cpu_exec(unsigned int n){
     default: sim_state.state = SIM_RUNNING;
   }
   // Lab2 TODO: implement instruction trace for your cpu
+    record[buf_head].pc = dut->pc_cur;
+    record[buf_head].ins.inst = dut->inst;
 
   bool npc_cpu_uncache_pre = 0;
   while (n--) {
@@ -103,8 +115,17 @@ void cpu_exec(unsigned int n){
       g_nr_guest_inst++;
       npc_cpu_uncache_pre = dut->uncache_read_wb;
     }
+    //difftest
+    difftest_step();
     // your cpu step a cycle
     single_cycle();
+    // print
+    buf_head = (buf_head + 1) % 16;
+    if (n == 0)
+        for(int i = 0; i < 16; i++){
+        record[(i + buf_head) % 16].print();
+        }
+    
 
 #ifdef DEVICE
     device_update();
@@ -161,8 +182,9 @@ extern "C" void set_csr_ptr(const svOpenArrayHandle mstatus, const svOpenArrayHa
 }
 
 void isa_reg_display() {
-  for (int i = 0; i < 32; i++) {
-    printf("gpr[%d](%s) = 0x%x\n", i, regs[i], cpu_gpr[i]);
+  for (int i = 0; i < 32; i += 2) {
+    printf("gpr[%d](%s) = 0x%x\t", i, regs[i], cpu_gpr[i]);
+    printf("gpr[%d](%s) = 0x%x\n", i + 1, regs[i + 1], cpu_gpr[i + 1]);
   }
 }
 

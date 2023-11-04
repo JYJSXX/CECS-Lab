@@ -3,6 +3,7 @@
 NAMES ?= $(basename $(notdir $(wildcard src/*.c)))
 # SRCS=src/%.c
 BASE_PORT = $(abspath ../base-port)
+SIM_PATH = $(abspath ../../simulator)
 # SIM_PATH = ## This is for running the simulator, you can ignore for Lab 1
 
 # -include ../base-port/Makefile
