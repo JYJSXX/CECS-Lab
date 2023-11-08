@@ -44,19 +44,13 @@ module ALU(
 
         `SUB:                   result = sr1 - sr2;
         `AND:                   result = sr1 & sr2;
-        `SLT:                   
-            case(sr1[31] ^ sr2[31])
-            1'b0: if(sr1[0]) result = sr1 < sr2 ? 0 : 1;
-                  else       result = sr1 < sr2 ? 1 : 0;
-            1'b1: if(sr1[0]) result = 1;
-                  else       result = 0;
-            endcase
+        `SLT:                   result = (sr1[31] ^ sr2[31]) ? {31'b0, sr1[31]} : {31'b0, sr1 < sr2};
         `SLTU:                  result = sr1 < sr2 ? 1 : 0;
         `OR:                    result = sr1 | sr2;
         `XOR:                   result = sr1 ^ sr2;
         `SLL:                   result = sr1 << sr2[4:0];
         `SRL:                   result = sr1 >> sr2[4:0];
-        `SRA:                   result = sr1 >>> sr2[4:0];
+        `SRA:                   result = ($signed(sr1)) >>> sr2[4:0];
         `MUL:                   result = result_64[31:0];
         `MULH, `MULHSU, `MULHU: result = result_64[63:32];
         `DIV, `DIVU:            result = sr2 == 0 ? -1 : result_div;

@@ -30,7 +30,8 @@ struct inst_log{
   void print(){
     if(pc == 0) return;
     disassemble(buf, 1000, pc, ins.inst_buf, 4);
-    std::cout << buf << std::endl;
+    std::cout << "PC: " << std::hex << pc;
+    std::cout << '\t' << buf << std::endl;
   }
 }record[16];
 
@@ -54,7 +55,7 @@ void single_cycle() {
   dut->eval();
   dut->clk = 0;
   dut->eval();
-  // m_trace->dump(sim_time++); 
+  m_trace->dump(sim_time++); 
   if(dut->commit_wb == 1) set_state();
 }
 
@@ -92,8 +93,6 @@ void cpu_exec(unsigned int n){
     default: sim_state.state = SIM_RUNNING;
   }
   // Lab2 TODO: implement instruction trace for your cpu
-    record[buf_head].pc = dut->pc_cur;
-    record[buf_head].ins.inst = dut->inst;
 
   bool npc_cpu_uncache_pre = 0;
   while (n--) {
@@ -112,19 +111,22 @@ void cpu_exec(unsigned int n){
       }
       // Lab3 TODO: use difftest_step function here to execute difftest
       
+    //difftest
+    difftest_step();
       g_nr_guest_inst++;
       npc_cpu_uncache_pre = dut->uncache_read_wb;
     }
-    //difftest
-    difftest_step();
     // your cpu step a cycle
     single_cycle();
+    
+    record[buf_head].pc = dut->pc_cur;
+    record[buf_head].ins.inst = dut->inst;
     // print
     buf_head = (buf_head + 1) % 16;
-    if (n == 0)
-        for(int i = 0; i < 16; i++){
-        record[(i + buf_head) % 16].print();
-        }
+    // if (n == 0)
+    //     for(int i = 0; i < 16; i++){
+    //     record[(i + buf_head) % 16].print();
+    //     }
     
 
 #ifdef DEVICE
@@ -132,15 +134,19 @@ void cpu_exec(unsigned int n){
 #endif
     if(sim_state.state != SIM_RUNNING) break;
   }
+  for(int i = 0; i < 16; i++){
+        record[(i + buf_head) % 16].print();
+        }
 
   switch (sim_state.state) {
     case SIM_RUNNING: sim_state.state = SIM_STOP; break;
-    case SIM_END: case SIM_ABORT:
+    case SIM_END: case SIM_ABORT: 
       Log("sim: %s at pc = " FMT_WORD,
           (sim_state.state == SIM_ABORT ? ANSI_FMT("ABORT", ANSI_FG_RED) :
            (sim_state.halt_ret == 0 ? ANSI_FMT("HIT GOOD TRAP", ANSI_FG_GREEN) :
             ANSI_FMT("HIT BAD TRAP", ANSI_FG_RED))),
           sim_state.halt_pc);
+          
       // fall through
     case SIM_QUIT: statistic();
   }

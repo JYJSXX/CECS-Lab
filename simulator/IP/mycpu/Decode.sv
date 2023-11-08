@@ -30,14 +30,14 @@ module Decode(
             // auipc, U_TYPE
             // Lab3 TODO: finish auipc instruction decode
 
-            // imm         
-            // mem_access  
-            // alu_op      = 
-            // rf_we       = 
-            // alu_rs1_sel = 
-            // alu_rs2_sel = 
-            // wb_rf_sel   = 
-            // br_type     = 
+            imm         = {inst[31:12], 12'b0};
+            mem_access  = `NO_ACCESS;
+            alu_op      = `ADD;
+            rf_we       = |rd;
+            alu_rs1_sel = `SRC1_PC;
+            alu_rs2_sel = `SRC2_IMM;
+            wb_rf_sel   = `FROM_ALU;
+            br_type     = {2'b0, funct3};
         end
         'h6f: begin
             // jal, J_TYPE
@@ -54,14 +54,14 @@ module Decode(
             // jalr, I_TYPE
             // Lab3 TODO: finish jalr instruction decode
 
-            // imm         =
-            // mem_access  =
-            // alu_op      =
-            // rf_we       =
-            // alu_rs1_sel =
-            // alu_rs2_sel =
-            // wb_rf_sel   =
-            // br_type     =
+            imm         = {{20{inst[31]}}, inst[31:20]};
+            mem_access  = `NO_ACCESS;
+            alu_op      = `ADD;
+            rf_we       = |rd;
+            alu_rs1_sel = `SRC1_PC;
+            alu_rs2_sel = `SRC2_FOUR;
+            wb_rf_sel   = `FROM_ALU;
+            br_type     = {1'b1, inst[2], inst[3], inst[1:0]};
         end
         'h63: begin
             // branch, B_TYPE
@@ -111,14 +111,14 @@ module Decode(
             // R_TYPE
             // Lab3 TODO: finish R_TYPE instruction decode
             
-            // imm         = 
-            // mem_access  = 
-            // alu_op      = 
-            // rf_we       = 
-            // alu_rs1_sel = 
-            // alu_rs2_sel = 
-            // wb_rf_sel   = 
-            // br_type     = 
+            imm         = 0;
+            mem_access  = `NO_ACCESS;
+            alu_op      = {((funct3 == 3'h0 || funct3 == 3'h5) && inst[30]), inst[25], funct3};
+            rf_we       = |rd;
+            alu_rs1_sel = `SRC1_REG1;
+            alu_rs2_sel = `SRC2_REG2;
+            wb_rf_sel   = `FROM_ALU;
+            br_type     = {1'b0, inst[2], funct3};
         end
         'h73: begin
             // CSR instruction

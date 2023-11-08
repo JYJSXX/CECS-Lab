@@ -16,11 +16,11 @@ module Branch(
             case(br_type[2:0])
             `BEQ: jump = sr1 == sr2;
             // Lab3 TODO: implement other branch instructions
-            // `BNE: jump = 
-            // `BLT: jump = 
-            // `BGE: jump = 
-            // `BLTU: jump = 
-            // `BGEU: jump = 
+            `BNE: jump = sr1 != sr2;
+            `BLT: jump = (sr1[31] ^ sr2[31]) ? sr1[31] : sr1 < sr2;
+            `BGE: jump = (sr1[31] ^ sr2[31]) ? sr2[31] : sr1 >= sr2;
+            `BLTU: jump = sr1 < sr2;
+            `BGEU: jump = sr1 >= sr2;
             default: jump = 0;
             endcase
         end
