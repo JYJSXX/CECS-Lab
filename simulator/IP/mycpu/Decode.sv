@@ -8,12 +8,17 @@ module Decode(
     output logic [ 1:0] alu_rs1_sel,
     output logic [ 1:0] alu_rs2_sel,
     output logic [ 0:0] wb_rf_sel,
-    output logic [ 4:0] br_type
+    output logic [ 4:0] br_type,
+    output logic [ 2:0] csr_op,
+    output logic [ 0:0] csr_we
 );
     // normal decode 
     wire [4:0] rd = inst[11:7];
     wire [2:0] funct3 = inst[14:12];
+    
     always_comb begin
+        csr_op = 0;
+        csr_we = 0;
         case(inst[6:0])
         'h37: begin
             // lui, U_TYPE
@@ -124,14 +129,16 @@ module Decode(
             // CSR instruction
             // Lab4 TODO: finish CSR instruction decode
 
-            // imm         = 
-            // mem_access  = 
-            // alu_op      = 
-            // rf_we       = 
-            // alu_rs1_sel = 
-            // alu_rs2_sel = 
-            // wb_rf_sel   = 
-            // br_type     = 
+            imm         = 0;
+            mem_access  = `NO_ACCESS; 
+            alu_op      = `ADD;
+            rf_we       = |rd;
+            alu_rs1_sel = `SRC1_ZERO;
+            alu_rs2_sel = `SRC2_CSR;
+            wb_rf_sel   = `FROM_ALU;
+            br_type     = 0;
+            csr_op      = funct3;
+            csr_we      = 1;
         end
         default: begin
             imm         = 0;

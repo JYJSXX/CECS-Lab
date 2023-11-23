@@ -47,6 +47,14 @@ module CPU#(
 
     logic [ 0:0]    commit_if1, commit_if2, commit_id, commit_ex, commit_ls;
 
+    //CSR
+    logic [ 2:0]     csr_op_id, csr_op_ex, csr_op_ls, csr_op_wb;
+    logic [ 0:0]     csr_we_id, csr_we_ex, csr_we_ls, csr_we_wb;
+    logic [11:0]     csr_addr_id, csr_addr_ex, csr_addr_ls, csr_addr_wb;
+    logic [31:0]     csr_data_ex, csr_data_ls, csr_data_wb;
+    // assign csr_data_id = rf_rdata1_id;
+    assign csr_data_ex = alu_rf_data1;
+
     assign inst = inst_wb;
     assign pc_cur = pc_wb;
     assign commit_if1 = rstn;
@@ -99,7 +107,7 @@ module CPU#(
         .clk            (clk),
         .rstn           (rstn),
         .stall          (IF2_ID_stall),
-        .flush          (IF1_IF2_flush),
+        .flush          (IF2_ID_flush),
         .pc_if2         (pc_if2),
         .inst_if2       (inst_if2),
         .pc_id          (pc_id),
@@ -118,7 +126,9 @@ module CPU#(
         .alu_rs1_sel    (alu_rs1_sel_id),
         .alu_rs2_sel    (alu_rs2_sel_id),
         .wb_rf_sel      (wb_rf_sel_id),
-        .br_type        (br_type_id)
+        .br_type        (br_type_id),
+        .csr_op         (csr_op_id),
+        .csr_we         (csr_we_id)
     );
     Regfile  Regfile_inst (
         .clk            (clk),
@@ -129,6 +139,40 @@ module CPU#(
         .we             (rf_we_wb),
         .rdata1         (rf_rdata1_id),
         .rdata2         (rf_rdata2_id)
+    );
+
+    logic   [11:0]      raddr_CSR;
+    logic   [11:0]      waddr_CSR;
+    logic               we;
+    logic   [31:0]      wdata_CSR, wdata_CSR_imm, wdata_CSR_rf, wdata_CSR_sr;
+    logic   [31:0]      rdata_CSR, rdata_CSR_id, rdata_CSR_ex;;
+    logic   [ 2:0]      csr_op;
+    assign raddr_CSR = inst_id[31:20];
+    assign waddr_CSR = csr_addr_wb;
+    assign csr_addr_id = raddr_CSR;
+    assign we = csr_we_wb;
+    assign wdata_CSR_rf = csr_data_wb;
+    assign wdata_CSR_imm = {27'b0, inst_wb[19:15]};
+    assign csr_op = csr_op_wb;
+    assign wdata_CSR_sr = csr_op[2] ? wdata_CSR_imm :wdata_CSR_rf;
+    assign rdata_CSR_id = rdata_CSR;
+    always_comb begin
+        case(csr_op[1:0])
+            2'b01: wdata_CSR = wdata_CSR_sr;
+            2'b10: wdata_CSR = alu_result_wb | wdata_CSR_sr;
+            2'b11: wdata_CSR = alu_result_wb & ~wdata_CSR_sr;
+            default: wdata_CSR = 32'h0;
+        endcase
+    end
+    
+    CSR CSR_inst(
+        .clk            (clk),
+        .rstn           (rstn),
+        .raddr          (raddr_CSR),
+        .waddr          (waddr_CSR),
+        .we             (we),
+        .wdata          (wdata_CSR),
+        .rdata          (rdata_CSR)
     );
 
     /* ID-EX segreg */
@@ -164,8 +208,15 @@ module CPU#(
         .alu_rs2_sel_ex (alu_rs2_sel_ex),
         .rf_we_ex       (rf_we_ex),
         .commit_id      (commit_id),
-        .commit_ex      (commit_ex)
-
+        .commit_ex      (commit_ex),
+        .csr_op_id      (csr_op_id),
+        .csr_op_ex      (csr_op_ex),
+        .csr_we_id      (csr_we_id),
+        .csr_we_ex      (csr_we_ex),
+        .csr_addr_id    (csr_addr_id),
+        .csr_addr_ex    (csr_addr_ex),
+        .csr_rdata_id   (rdata_CSR_id),
+        .csr_rdata_ex   (rdata_CSR_ex)
     );
 
     /* EX stage */
@@ -201,7 +252,7 @@ module CPU#(
         .din1           (alu_rf_data2),
         .din2           (imm_ex),
         .din3           (32'h4),
-        .din4           (32'h0),
+        .din4           (rdata_CSR_ex),
         .sel            (alu_rs2_sel_ex),
         .dout           (alu_rs2)
     );
@@ -244,7 +295,15 @@ module CPU#(
         .wb_rf_sel_ls   (wb_rf_sel_ls),
         .rf_we_ls       (rf_we_ls),
         .commit_ex      (commit_ex),
-        .commit_ls      (commit_ls)
+        .commit_ls      (commit_ls),
+        .csr_op_ex      (csr_op_ex),
+        .csr_op_ls      (csr_op_ls),
+        .csr_we_ex      (csr_we_ex),
+        .csr_we_ls      (csr_we_ls),
+        .csr_addr_ex    (csr_addr_ex),
+        .csr_addr_ls    (csr_addr_ls),
+        .csr_data_ex    (csr_data_ex),
+        .csr_data_ls    (csr_data_ls)
     );
 
     DCache # (
@@ -291,7 +350,15 @@ module CPU#(
         .commit_ls          (commit_ls),
         .commit_wb          (commit_wb),
         .read_ls            (mem_access_ls[`LOAD_BIT]),
-        .uncache_read_wb    (uncache_read_wb)
+        .uncache_read_wb    (uncache_read_wb),
+        .csr_op_ls          (csr_op_ls),
+        .csr_op_wb          (csr_op_wb),
+        .csr_we_ls          (csr_we_ls),
+        .csr_we_wb          (csr_we_wb),
+        .csr_addr_ls        (csr_addr_ls),
+        .csr_addr_wb        (csr_addr_wb),
+        .csr_data_ls        (csr_data_ls),
+        .csr_data_wb        (csr_data_wb)
     );
 
     /* WB stage */
@@ -326,6 +393,11 @@ module CPU#(
         .rf_rs2_id          (inst_id[24:20]),
         .jump               (jump),
         .jump_target        (jump_target),
+        .csr_we_id          (csr_we_id),
+        .csr_we_ex          (csr_we_ex),
+        .csr_we_ls          (csr_we_ls),
+        .csr_we_wb          (csr_we_wb),
+
 
         .pc_set             (pc_set),
         .IF1_IF2_flush      (IF1_IF2_flush),

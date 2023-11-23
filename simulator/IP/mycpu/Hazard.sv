@@ -26,6 +26,10 @@ module Hazard(
     input  logic [31:0] jump_target,
 
     // Lab4 TODO: you may need to add some signals to cope with CSR, ecall and mret
+    input  logic [ 0:0] csr_we_id,
+    input  logic [ 0:0] csr_we_ex,
+    input  logic [ 0:0] csr_we_ls,
+    input  logic [ 0:0] csr_we_wb,
 
     output logic [ 0:0] pc_set,
     output logic [ 0:0] IF1_IF2_flush,
@@ -42,7 +46,7 @@ module Hazard(
     output logic [ 0:0] LS_WB_stall,
 
     output logic [31:0] pc_set_target
-);
+);  
     // forwarding
     always_comb begin
         forward1_en = 0;
@@ -65,6 +69,7 @@ module Hazard(
             forward2_en = 1'b1;
             forward2_data = rf_wdata_wb;
         end
+        
     end
 
     // load-use
@@ -86,19 +91,20 @@ module Hazard(
     // control hazard
     wire flush_by_jump = jump;
     // Lab4 TODO: generate CSR related flush signal
+    wire stall_by_csr = ~is_load_ex & (csr_we_id | csr_we_ex | csr_we_ls);
     // Lab4 TODO: generate ecall and mret flush signal
 
     // Lab3 TODO: generate pc_set, IF1_IF2_flush, IF2_ID_flush, ID_EX_flush, EX_LS_flush, LS_WB_flush
     assign pc_set           = jump;
     assign IF1_IF2_flush    = jump;
-    assign IF2_ID_flush     = jump;
+    assign IF2_ID_flush     = jump | stall_by_csr;
     assign ID_EX_flush      = flush_by_load_use | jump;
     assign EX_LS_flush      = 0;
     assign LS_WB_flush      = 0;
 
     // Lab3 TODO: generate pc_stall, IF1_IF2_stall, IF2_ID_stall, ID_EX_stall, EX_LS_stall, LS_WB_stall
-    assign pc_stall         = stall_by_load_use;
-    assign IF1_IF2_stall    = stall_by_load_use;
+    assign pc_stall         = stall_by_load_use | stall_by_csr & ~jump;
+    assign IF1_IF2_stall    = stall_by_load_use | stall_by_csr & ~jump;
     assign IF2_ID_stall     = stall_by_load_use;
     assign ID_EX_stall      = 0;
     assign EX_LS_stall      = 0;

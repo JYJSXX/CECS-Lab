@@ -19,6 +19,11 @@ module SegReg_ID_EX#(
     input  logic [ 1:0] alu_rs2_sel_id,
     input  logic [ 0:0] rf_we_id,
     input  logic [ 0:0] commit_id,
+    input  logic [ 2:0] csr_op_id,
+    input  logic [ 0:0] csr_we_id,
+    input  logic [11:0] csr_addr_id,
+    input  logic [31:0] csr_rdata_id,
+    
 
     output logic [31:0] pc_ex,
     output logic [31:0] inst_ex,
@@ -32,7 +37,11 @@ module SegReg_ID_EX#(
     output logic [ 1:0] alu_rs1_sel_ex,
     output logic [ 1:0] alu_rs2_sel_ex,
     output logic [ 0:0] rf_we_ex,
-    output logic [ 0:0] commit_ex
+    output logic [ 0:0] commit_ex,
+    output logic [ 2:0] csr_op_ex,
+    output logic [ 0:0] csr_we_ex,
+    output logic [11:0] csr_addr_ex,
+    output logic [31:0] csr_rdata_ex
 );
     always_ff @(posedge clk) begin
         if(!rstn || flush) begin
@@ -49,6 +58,10 @@ module SegReg_ID_EX#(
             alu_rs2_sel_ex  <=  2'h0;
             rf_we_ex        <=  1'h0;
             commit_ex       <=  1'h0;
+            csr_op_ex       <=  3'h0;
+            csr_we_ex       <=  1'h0;
+            csr_addr_ex     <= 12'h0;
+            csr_rdata_ex    <= 32'h0;
         end 
         else if(!stall) begin
             pc_ex           <= pc_id;
@@ -64,6 +77,10 @@ module SegReg_ID_EX#(
             alu_rs2_sel_ex  <= alu_rs2_sel_id;
             rf_we_ex        <= rf_we_id;
             commit_ex       <= commit_id;
+            csr_op_ex       <= csr_op_id;
+            csr_we_ex       <= csr_we_id;
+            csr_addr_ex     <= csr_addr_id;
+            csr_rdata_ex    <= csr_rdata_id;
         end
     end
 
