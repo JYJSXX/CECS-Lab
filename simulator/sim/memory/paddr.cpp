@@ -57,10 +57,27 @@ void pmem_read(){
     dut->rvalid = 0;
     if(dut->arvalid){
       // Lab5 TODO: implement the read request
+        araddr = dut->araddr;
+        assert(araddr >= 0x80000000);
+        arlen = dut->arlen;
+        arsize = 1 << dut->arsize;
+        rstate = 1;
+        dut->arready = 1;
+        rcount = 0;
     }
   }
   else if(rstate == 1) {
     // Lab5 TODO: implement the read data
+    dut->arready = 0;
+    if(dut->rready){
+      uint32_t byte_addr = araddr + rcount * arsize;
+      uint32_t rdata = in_pmem(araddr) ? host_read(guest_to_host(byte_addr), arsize) : mmio_read(byte_addr, arsize);
+      dut->rdata = rdata;
+      dut->rvalid = 1;
+      dut->rlast = (rcount == arlen);
+      rcount++;
+      rstate = dut->rlast ? 0 : 1;
+    }
   }
 }
 uint32_t awaddr = 0;

@@ -1,6 +1,6 @@
-ARGS ?= 
+ARGS ?= -b
 
-APP ?= hello
+APP ?= keyboard
 APP_IMG = $(addprefix $(TEST_DIR)/app/, $(addsuffix -riscv32.bin, $(APP)))
 IMG ?= $(APP_IMG)
 

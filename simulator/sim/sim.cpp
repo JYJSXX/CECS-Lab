@@ -58,8 +58,12 @@ void single_cycle() {
   dut->clk = 1;
   dut->eval();
   dut->clk = 0;
+#ifdef AXI
+    pmem_write();
+    pmem_read();
+#endif
   dut->eval();
-  m_trace->dump(sim_time++); 
+  if(sim_time <= 100000ull) m_trace->dump(sim_time++); 
   if(dut->commit_wb == 1) set_state();
 }
 
