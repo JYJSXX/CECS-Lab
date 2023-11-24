@@ -87,6 +87,13 @@
         "typeinfo": "cpp",
         "valarray": "cpp",
         "variant": "cpp",
-        "dev-mmio.h": "c"
-    }
+        "dev-mmio.h": "c",
+        "common.h": "c",
+        "fs.h": "c",
+        "elf.h": "c",
+        "proc.h": "c",
+        "context.h": "c",
+        "tool.h": "c"
+    },
+    "cmake.sourceDirectory": "/home/jyjs/CECS/CECS-Lab/software/os"
 }

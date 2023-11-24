@@ -3,12 +3,38 @@
 #include <proc.h>
 #include <context.h>
 #include <common.h>
+#include <device.h>
+#include <debug.h>
 
 #define Elf_Ehdr Elf32_Ehdr
 #define Elf_Phdr Elf32_Phdr
 
+
+
+enum {FD_STDIN, FD_STDOUT, FD_STDERR, FD_EVENTS, FD_FB, FD_DISPINFO};
+extern Finfo file_table[];
+
 static uintptr_t elf_load(const char *filename) {
     // Lab7 TODO: implement the loader
+    Elf_Ehdr elf_h;
+    int idx = fs_open(filename, 0, 0);
+    assert(idx != -1);
+    int offset = file_table[idx].disk_offset;
+    ramdisk_read((void*)&elf_h, offset, sizeof(Elf_Ehdr));
+    assert(*(int *)elf_h.e_ident == 0x464c457f);
+    assert(elf_h.e_machine == EM_RISCV);
+
+    Elf_Phdr elf_ph;
+    for(int i = 0; i < elf_h.e_phnum; i++){
+        ramdisk_read((void*)&elf_ph, offset + elf_h.e_phoff + i * elf_h.e_phentsize, sizeof(Elf_Phdr));
+        if(elf_ph.p_type == PT_LOAD){
+            ramdisk_read((void*)(elf_ph.p_vaddr), offset + elf_ph.p_offset, elf_ph.p_filesz);
+            memset((void*)(elf_ph.p_vaddr + elf_ph.p_filesz), 0, elf_ph.p_memsz - elf_ph.p_filesz);
+        }
+    }
+    asm volatile("fence.i");
+
+    return elf_h.e_entry;
 }
 
 void user_naive_load(const char *filename) {
